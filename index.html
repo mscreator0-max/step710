@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>K8s Secret 보안 메커니즘 시뮬레이터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .transition-all { transition: all 0.5s ease-in-out; }
+        .hidden-op { opacity: 0; transform: translateY(10px); }
+        .visible-op { opacity: 1; transform: translateY(0); }
+        .data-flow { animation: flowDown 1s forwards; }
+        @keyframes flowDown { 0% { opacity: 0; transform: translateY(-20px); } 100% { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6 font-sans">
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        <div class="bg-slate-800 text-white p-6 text-center">
+            <h1 class="text-2xl font-bold">K8s Secret 보안 메커니즘</h1>
+            <p class="text-slate-300 mt-2 text-sm">평문 비밀번호가 어떻게 안전하게 DB로 전달되는지 확인하세요.</p>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <div class="flex items-center gap-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                <div class="text-4xl">👨‍💻</div>
+                <div class="flex-1">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">1. DB 비밀번호 입력 (평문)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="plain-pwd" value="Passw0rD" class="flex-1 p-2 border rounded-lg font-mono text-slate-700 focus:outline-none focus:border-blue-500">
+                        <button onclick="step1()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Base64 인코딩</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="arrow-1" class="text-center text-2xl text-slate-400 hidden-op transition-all">⬇️</div>
+
+            <div id="step-2-box" class="p-4 bg-purple-50 rounded-xl border border-purple-200 hidden-op transition-all relative">
+                <div class="absolute top-2 right-2 text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded">K8s Secret Object</div>
+                <label class="block text-sm font-bold text-purple-800 mb-2">2. Secret 생성 (인코딩된 데이터 저장)</label>
+                <div class="bg-slate-800 p-3 rounded-lg text-green-400 font-mono text-sm">
+                    apiVersion: v1<br>
+                    kind: Secret<br>
+                    metadata:<br>
+                    &nbsp;&nbsp;name: mysql-pass<br>
+                    data:<br>
+                    &nbsp;&nbsp;password: <span id="encoded-pwd" class="text-yellow-300 font-bold bg-slate-700 px-1 rounded"></span>
+                </div>
+                <button onclick="step2()" class="mt-3 w-full py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700">파드(Pod)에 환경변수 주입</button>
+            </div>
+
+            <div id="arrow-2" class="text-center text-2xl text-slate-400 hidden-op transition-all">⬇️</div>
+
+            <div id="step-3-box" class="p-4 bg-green-50 rounded-xl border border-green-200 hidden-op transition-all relative">
+                <div class="absolute top-2 right-2 text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">MySQL Pod</div>
+                <label class="block text-sm font-bold text-green-800 mb-2">3. 파드 내부 적용 (자동 디코딩되어 사용됨)</label>
+                <div class="bg-slate-800 p-3 rounded-lg text-slate-300 font-mono text-sm">
+                    $ env | grep MYSQL_ROOT_PASSWORD<br>
+                    <span class="text-blue-400">MYSQL_ROOT_PASSWORD</span>=<span id="decoded-pwd" class="text-white font-bold"></span>
+                </div>
+                <div class="mt-2 text-sm text-green-700 font-bold">✅ YAML 파일에 비밀번호가 노출되지 않고 안전하게 주입되었습니다!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function step1() {
+            const plain = document.getElementById('plain-pwd').value;
+            if(!plain) { alert('비밀번호를 입력하세요!'); return; }
+            
+            // Base64 인코딩
+            const encoded = btoa(plain);
+            document.getElementById('encoded-pwd').innerText = encoded;
+            
+            document.getElementById('arrow-1').classList.replace('hidden-op', 'visible-op');
+            setTimeout(() => document.getElementById('step-2-box').classList.replace('hidden-op', 'visible-op'), 200);
+        }
+
+        function step2() {
+            const plain = document.getElementById('plain-pwd').value;
+            document.getElementById('decoded-pwd').innerText = plain;
+            
+            document.getElementById('arrow-2').classList.replace('hidden-op', 'visible-op');
+            setTimeout(() => document.getElementById('step-3-box').classList.replace('hidden-op', 'visible-op'), 200);
+        }
+    </script>
+</body>
+</html>
